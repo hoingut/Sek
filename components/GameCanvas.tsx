@@ -1,6 +1,8 @@
+
 import React, { useRef, useEffect, useCallback } from 'react';
 import { GameState, GameObject, ObstacleType, Particle } from '../types';
 import { GAME_SPEED_START, GRAVITY, JUMP_FORCE, GROUND_HEIGHT, SPAWN_RATE_MAX, PLAYER_HEIGHT, ZONES } from '../constants';
+import { playJumpSound, playCoinSound, playCrashSound } from '../utils/audio';
 
 interface GameCanvasProps {
   gameState: GameState;
@@ -18,7 +20,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onGameOver, onScoreU
   const scoreRef = useRef({ distance: 0, coins: 0 });
   const speedRef = useRef(GAME_SPEED_START);
   const playerRef = useRef({
-    x: 80,
+    x: 120, // Moved forward slightly to make room for chaser
     y: 0,
     dy: 0,
     isJumping: false,
@@ -45,6 +47,80 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onGameOver, onScoreU
     ctx.quadraticCurveTo(x, y, x + r, y);
     ctx.closePath();
     ctx.fill();
+  };
+
+  const drawChaser = (ctx: CanvasRenderingContext2D, x: number, y: number, runCycle: number) => {
+    ctx.save();
+    ctx.translate(x, y);
+    
+    // Simple bobbing
+    const bob = Math.sin(runCycle + 2) * 3;
+    ctx.translate(0, bob);
+
+    // Colors
+    const skinColor = '#E0AC69';
+    const hairColor = '#FFFFFF'; // White hair/beard
+    const vestColor = '#FF9933'; // Saffron
+    const kurtaColor = '#FFFFFF'; 
+
+    // Body (Kurta)
+    ctx.fillStyle = kurtaColor;
+    ctx.beginPath();
+    ctx.ellipse(20, 45, 12, 20, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Vest (Jacket)
+    ctx.fillStyle = vestColor;
+    ctx.beginPath();
+    ctx.moveTo(10, 30);
+    ctx.lineTo(30, 30);
+    ctx.lineTo(30, 55);
+    ctx.lineTo(10, 55);
+    ctx.fill();
+
+    // Head
+    ctx.fillStyle = skinColor;
+    ctx.beginPath();
+    ctx.arc(20, 15, 12, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Beard (White)
+    ctx.fillStyle = hairColor;
+    ctx.beginPath();
+    ctx.arc(20, 20, 12, 0, Math.PI, false); // Bottom half of face
+    ctx.lineTo(32, 15);
+    ctx.lineTo(8, 15);
+    ctx.fill();
+
+    // Hair
+    ctx.beginPath();
+    ctx.arc(20, 12, 13, Math.PI, 0);
+    ctx.fill();
+
+    // Glasses
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(15, 14); ctx.lineTo(25, 14);
+    ctx.stroke();
+    ctx.strokeRect(14, 11, 5, 4);
+    ctx.strokeRect(21, 11, 5, 4);
+
+    // Arms (Swinging)
+    ctx.strokeStyle = kurtaColor;
+    ctx.lineWidth = 4;
+    const armSwing = Math.cos(runCycle + 2) * 10;
+    ctx.beginPath(); ctx.moveTo(20, 32); ctx.lineTo(20 - armSwing, 50); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(20, 32); ctx.lineTo(20 + armSwing, 50); ctx.stroke();
+
+    // Legs
+    ctx.strokeStyle = '#FFF'; // White pants
+    ctx.lineWidth = 4;
+    const legSwing = Math.sin(runCycle + 2) * 15;
+    ctx.beginPath(); ctx.moveTo(15, 60); ctx.lineTo(15 - legSwing, 80); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(25, 60); ctx.lineTo(25 + legSwing, 80); ctx.stroke();
+
+    ctx.restore();
   };
 
   const drawCharacter = (ctx: CanvasRenderingContext2D, x: number, y: number, isJumping: boolean, runCycle: number) => {
@@ -242,6 +318,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onGameOver, onScoreU
   const handleJump = useCallback(() => {
     if (gameState !== GameState.PLAYING) return;
     if (!playerRef.current.isJumping) {
+      playJumpSound(); // Sound Effect
       playerRef.current.dy = JUMP_FORCE;
       playerRef.current.isJumping = true;
       spawnParticles(playerRef.current.x + 20, playerRef.current.y + 70, '#fff', 8);
@@ -354,6 +431,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onGameOver, onScoreU
       // Simple box collision
       if (hitbox.x < obs.x + obs.width && hitbox.x + hitbox.w > obs.x &&
           hitbox.y < obs.y + obs.height && hitbox.y + hitbox.h > obs.y) {
+        playCrashSound(); // Sound Effect
         onGameOver(scoreRef.current);
         return;
       }
@@ -363,6 +441,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onGameOver, onScoreU
            hitbox.y < coin.y + coin.height && hitbox.y + hitbox.h > coin.y) {
          coin.active = false;
          scoreRef.current.coins += 1;
+         playCoinSound(); // Sound Effect
          spawnParticles(coin.x + 20, coin.y + 20, '#FFD700', 10);
        }
     });
@@ -375,6 +454,9 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onGameOver, onScoreU
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     drawBackground(ctx, canvas.width, canvas.height, activeZoneIndexRef.current, scroll);
+
+    // Draw Chaser (Modi) behind player
+    drawChaser(ctx, p.x - 80, p.groundY - PLAYER_HEIGHT, p.runCycle);
 
     drawCharacter(ctx, p.x, p.y, p.isJumping, p.runCycle);
 

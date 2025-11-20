@@ -1,7 +1,8 @@
+
 export const GAME_SPEED_START = 6;
 export const GRAVITY = 0.6;
 export const JUMP_FORCE = -12;
-export const GROUND_HEIGHT = 100; // Pixels from bottom
+export const GROUND_HEIGHT = 180; // Increased to 180 to provide ~100px visual margin at bottom
 
 export const SPAWN_RATE_MIN = 60; // Frames
 export const SPAWN_RATE_MAX = 120;
