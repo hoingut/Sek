@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { GameState, GameScore } from '../types';
 import { PlayIcon, ArrowPathIcon } from '@heroicons/react/24/solid';
@@ -102,12 +103,16 @@ const UIOverlay: React.FC<UIOverlayProps> = ({ gameState, score, zoneName, onSta
       {gameState === GameState.GAME_OVER && (
         <div className="absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center pointer-events-auto z-50 backdrop-blur-md">
           <div className="bg-slate-800 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center border-t-4 border-brand-red relative">
-            <div className="w-16 h-16 bg-brand-red/20 rounded-full flex items-center justify-center mx-auto mb-4 text-brand-red">
-               <span className="text-3xl font-black">!</span>
+            
+            {/* Fashir (Rope/Knot) Icon */}
+            <div className="w-20 h-20 bg-brand-red/20 rounded-full flex items-center justify-center mx-auto mb-4 text-brand-red">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-10 h-10">
+                  <path fillRule="evenodd" d="M12 2.25a.75.75 0 01.75.75v.756a3.25 3.25 0 013.24 3.14l.01.104v2.006a1.75 1.75 0 01-1.75 1.75H14.2a1.75 1.75 0 01-1.75-1.75v-2H12v11.49l.455-.303a2.25 2.25 0 011.923-.248l.57.208a2.25 2.25 0 001.56 0l.57-.208a2.25 2.25 0 011.923.248l1.091.728a.75.75 0 01-.832 1.248l-1.09-.728a.75.75 0 00-.641-.083l-.57.208a2.25 2.25 0 01-1.56 0l-.57-.208a.75.75 0 00-.513-.098V19.5a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM12.45 8.75v-2a1.75 1.75 0 00-1.74-1.75l-.103-.003a1.75 1.75 0 00-1.647 1.647v2.106a1.75 1.75 0 001.75 1.75H12.45z" clipRule="evenodd" />
+                </svg>
             </div>
             
             <h2 className="text-3xl font-black text-white mb-2 uppercase italic">System Halted</h2>
-            <p className="text-slate-400 text-sm mb-6">Obstacle Encountered: Anti-Progress Bot</p>
+            <p className="text-slate-400 text-sm mb-6">"Caught by the Consequences"</p>
             
             <div className="flex justify-center gap-4 mb-8">
                <div className="text-center">

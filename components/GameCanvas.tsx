@@ -20,7 +20,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onGameOver, onScoreU
   const scoreRef = useRef({ distance: 0, coins: 0 });
   const speedRef = useRef(GAME_SPEED_START);
   const playerRef = useRef({
-    x: 120, // Moved forward slightly to make room for chaser
+    x: 120,
     y: 0,
     dy: 0,
     isJumping: false,
@@ -30,6 +30,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onGameOver, onScoreU
   const obstaclesRef = useRef<GameObject[]>([]);
   const coinsRef = useRef<GameObject[]>([]);
   const particlesRef = useRef<Particle[]>([]);
+  const heartParticlesRef = useRef<Particle[]>([]); // Dedicated hearts for Modi
   const activeZoneIndexRef = useRef(0);
 
   // --- DRAWING HELPERS ---
@@ -106,12 +107,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onGameOver, onScoreU
     ctx.strokeRect(14, 11, 5, 4);
     ctx.strokeRect(21, 11, 5, 4);
 
-    // Arms (Swinging)
+    // Arms (Swinging) - Reaching out as a "Premik"
     ctx.strokeStyle = kurtaColor;
     ctx.lineWidth = 4;
-    const armSwing = Math.cos(runCycle + 2) * 10;
-    ctx.beginPath(); ctx.moveTo(20, 32); ctx.lineTo(20 - armSwing, 50); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(20, 32); ctx.lineTo(20 + armSwing, 50); ctx.stroke();
+    const armSwing = Math.cos(runCycle + 2) * 5; // Less swing, more reaching
+    // Reaching forward
+    ctx.beginPath(); ctx.moveTo(20, 32); ctx.lineTo(35, 40 + armSwing); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(20, 32); ctx.lineTo(35, 40 - armSwing); ctx.stroke();
 
     // Legs
     ctx.strokeStyle = '#FFF'; // White pants
@@ -123,13 +125,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onGameOver, onScoreU
     ctx.restore();
   };
 
-  const drawCharacter = (ctx: CanvasRenderingContext2D, x: number, y: number, isJumping: boolean, runCycle: number) => {
+  const drawCharacter = (ctx: CanvasRenderingContext2D, x: number, y: number, isJumping: boolean, runCycle: number, isDead: boolean) => {
     ctx.save();
     ctx.translate(x, y);
 
     // Bobbing animation
     const bob = isJumping ? 0 : Math.sin(runCycle) * 3;
-    ctx.translate(0, bob);
+    if (!isDead) ctx.translate(0, bob);
 
     // Colors
     const sareeColor = '#00A86B'; // Joy Bangla Green
@@ -178,38 +180,68 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onGameOver, onScoreU
     ctx.arc(5, 12, 8, 0, Math.PI * 2); // Bun back
     ctx.fill();
 
-    // 4. Face (Cartoon Eyes)
-    ctx.fillStyle = '#fff';
-    // Left Eye
-    ctx.beginPath(); ctx.ellipse(18, 12, 4, 5, 0, 0, Math.PI*2); ctx.fill();
-    // Right Eye
-    ctx.beginPath(); ctx.ellipse(28, 12, 4, 5, 0, 0, Math.PI*2); ctx.fill();
-    
-    // Pupils
-    ctx.fillStyle = '#000';
-    ctx.beginPath(); ctx.arc(20, 12, 2, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(30, 12, 2, 0, Math.PI*2); ctx.fill();
+    // 4. Face
+    if (isDead) {
+      // Funny Dead Face
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 2;
+      
+      // Left Eye (X)
+      ctx.beginPath(); 
+      ctx.moveTo(16, 10); ctx.lineTo(22, 16);
+      ctx.moveTo(22, 10); ctx.lineTo(16, 16);
+      ctx.stroke();
 
-    // Smile
-    ctx.beginPath(); 
-    ctx.strokeStyle = '#8B4513';
-    ctx.lineWidth = 1.5;
-    ctx.arc(24, 18, 4, 0.2, Math.PI - 0.2); 
-    ctx.stroke();
+      // Right Eye (X)
+      ctx.beginPath(); 
+      ctx.moveTo(26, 10); ctx.lineTo(32, 16);
+      ctx.moveTo(32, 10); ctx.lineTo(26, 16);
+      ctx.stroke();
 
-    // Glasses (Subtle)
-    ctx.strokeStyle = '#333';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(14, 12); ctx.lineTo(32, 12); ctx.stroke();
-    ctx.strokeRect(14, 8, 8, 8);
-    ctx.strokeRect(24, 8, 8, 8);
+      // Mouth (Tongue out)
+      ctx.beginPath();
+      ctx.arc(24, 22, 4, 0, Math.PI, false);
+      ctx.stroke();
+      ctx.fillStyle = '#FF69B4'; // Pink tongue
+      ctx.beginPath();
+      ctx.ellipse(24, 25, 2, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Normal Cartoon Eyes
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.ellipse(18, 12, 4, 5, 0, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(28, 12, 4, 5, 0, 0, Math.PI*2); ctx.fill();
+      
+      // Pupils
+      ctx.fillStyle = '#000';
+      ctx.beginPath(); ctx.arc(20, 12, 2, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(30, 12, 2, 0, Math.PI*2); ctx.fill();
+
+      // Smile
+      ctx.beginPath(); 
+      ctx.strokeStyle = '#8B4513';
+      ctx.lineWidth = 1.5;
+      ctx.arc(24, 18, 4, 0.2, Math.PI - 0.2); 
+      ctx.stroke();
+
+      // Glasses (Subtle)
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(14, 12); ctx.lineTo(32, 12); ctx.stroke();
+      ctx.strokeRect(14, 8, 8, 8);
+      ctx.strokeRect(24, 8, 8, 8);
+    }
 
     // 5. Arms
     ctx.strokeStyle = skinColor;
     ctx.lineWidth = 6;
     ctx.lineCap = 'round';
     
-    if (isJumping) {
+    if (isDead) {
+        // Flailing arms
+        ctx.beginPath(); ctx.moveTo(22, 30); ctx.lineTo(10, 15); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(22, 30); ctx.lineTo(45, 15); ctx.stroke();
+    } else if (isJumping) {
        ctx.beginPath(); ctx.moveTo(22, 30); ctx.lineTo(40, 15); ctx.stroke(); // Hurray pose
     } else {
        const armSwing = Math.cos(runCycle) * 12;
@@ -218,7 +250,11 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onGameOver, onScoreU
 
     // 6. Legs
     ctx.strokeStyle = sareeColor;
-    if (isJumping) {
+    if (isDead) {
+      // Legs spread
+      ctx.beginPath(); ctx.moveTo(18, 55); ctx.lineTo(10, 75); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(28, 55); ctx.lineTo(40, 75); ctx.stroke();
+    } else if (isJumping) {
       ctx.beginPath(); ctx.moveTo(18, 55); ctx.lineTo(12, 70); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(28, 55); ctx.lineTo(38, 65); ctx.stroke();
     } else {
@@ -302,12 +338,24 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onGameOver, onScoreU
     }
   };
 
+  const spawnHearts = (x: number, y: number) => {
+     if (Math.random() > 0.2) return;
+     heartParticlesRef.current.push({
+       x, y,
+       vx: (Math.random() - 0.5) * 2,
+       vy: -2 - Math.random() * 2,
+       life: 1.0,
+       color: '#FF69B4'
+     });
+  };
+
   const resetGame = useCallback(() => {
     scoreRef.current = { distance: 0, coins: 0 };
     speedRef.current = GAME_SPEED_START;
     obstaclesRef.current = [];
     coinsRef.current = [];
     particlesRef.current = [];
+    heartParticlesRef.current = [];
     activeZoneIndexRef.current = 0;
     playerRef.current.y = playerRef.current.groundY - PLAYER_HEIGHT;
     playerRef.current.dy = 0;
@@ -366,11 +414,88 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onGameOver, onScoreU
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    if (gameState !== GameState.PLAYING) return;
-
-    frameCountRef.current++;
+    // Clear logic
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // We draw even if paused/game over so the screen isn't empty
+    const p = playerRef.current;
+    const isGameOver = gameState === GameState.GAME_OVER;
     const scroll = frameCountRef.current * speedRef.current;
 
+    // Draw Background
+    drawBackground(ctx, canvas.width, canvas.height, activeZoneIndexRef.current, scroll);
+
+    // Draw Chaser (Modi) behind player
+    drawChaser(ctx, p.x - 80, p.groundY - PLAYER_HEIGHT, p.runCycle);
+
+    // Draw Character (Funny if Game Over)
+    drawCharacter(ctx, p.x, p.y, p.isJumping, p.runCycle, isGameOver);
+
+    // Draw Obstacles
+    obstaclesRef.current.forEach(obs => {
+      if (obs.type === ObstacleType.FLYING_DRONE) {
+        ctx.fillStyle = '#444';
+        ctx.beginPath(); ctx.arc(obs.x + 25, obs.y + 25, 20, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#FF0000';
+        ctx.shadowColor = '#FF0000'; ctx.shadowBlur = 10;
+        ctx.beginPath(); ctx.arc(obs.x + 25, obs.y + 25, 8, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#CCC';
+        ctx.fillRect(obs.x + 5, obs.y, 40, 4);
+      } else {
+        ctx.fillStyle = '#2c3e50';
+        drawRoundedRect(ctx, obs.x, obs.y, 50, 50, 8);
+        ctx.fillStyle = '#e74c3c';
+        ctx.beginPath(); ctx.moveTo(obs.x + 10, obs.y + 15); ctx.lineTo(obs.x+25, obs.y+25); ctx.lineTo(obs.x+10, obs.y+25); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(obs.x + 40, obs.y + 15); ctx.lineTo(obs.x+25, obs.y+25); ctx.lineTo(obs.x+40, obs.y+25); ctx.fill();
+        ctx.fillStyle = '#ecf0f1';
+        ctx.fillRect(obs.x+15, obs.y+35, 20, 5);
+      }
+    });
+
+    // Draw Coins
+    coinsRef.current.forEach(coin => {
+      if (!coin.active) return;
+      const bounce = Math.sin(frameCountRef.current * 0.15) * 8;
+      ctx.fillStyle = '#FFD700';
+      ctx.strokeStyle = '#D4AF37';
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(coin.x + 20, coin.y + 20 + bounce, 18, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#B45309'; ctx.font = 'bold 24px Arial'; ctx.fillText('৳', coin.x + 12, coin.y + 28 + bounce);
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.beginPath(); ctx.arc(coin.x + 15, coin.y + 15 + bounce, 5, 0, Math.PI*2); ctx.fill();
+    });
+
+    // Draw Particles
+    particlesRef.current.forEach(pt => {
+      ctx.fillStyle = pt.color;
+      ctx.globalAlpha = pt.life;
+      ctx.beginPath(); ctx.arc(pt.x, pt.y, 4, 0, Math.PI*2); ctx.fill();
+    });
+    ctx.globalAlpha = 1.0;
+
+    // Draw Heart Particles (Modi Premik)
+    heartParticlesRef.current.forEach(pt => {
+      ctx.fillStyle = pt.color;
+      ctx.globalAlpha = pt.life;
+      // Draw Heart shape
+      const s = 10 * pt.life;
+      ctx.translate(pt.x, pt.y);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.bezierCurveTo(-s/2, -s/2, -s, 0, 0, s);
+      ctx.bezierCurveTo(s, 0, s/2, -s/2, 0, 0);
+      ctx.fill();
+      ctx.translate(-pt.x, -pt.y);
+    });
+    ctx.globalAlpha = 1.0;
+
+    if (gameState !== GameState.PLAYING) return;
+
+    // --- GAME PLAYING LOGIC ---
+
+    frameCountRef.current++;
+    
     // Logic: Speed & Score
     if (frameCountRef.current % 300 === 0) speedRef.current += 0.5;
     scoreRef.current.distance += speedRef.current / 10;
@@ -383,15 +508,17 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onGameOver, onScoreU
     }
 
     // Logic: Player Physics
-    const p = playerRef.current;
     p.dy += GRAVITY;
     p.y += p.dy;
-    p.runCycle += 0.25; // Faster legs for cartoon feel
+    p.runCycle += 0.25;
     if (p.y + PLAYER_HEIGHT > p.groundY) {
       p.y = p.groundY - PLAYER_HEIGHT;
       p.dy = 0;
       p.isJumping = false;
     }
+
+    // Logic: Modi Hearts
+    spawnHearts(p.x - 60, p.groundY - 60);
 
     // Logic: Spawning
     const currentSpawnRate = Math.max(30, SPAWN_RATE_MAX - (speedRef.current * 3));
@@ -424,14 +551,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onGameOver, onScoreU
     coinsRef.current = coinsRef.current.filter(c => c.x > -100);
 
     // Logic: Collision
-    // Smaller hitbox for player to be forgiving
     const hitbox = { x: p.x + 15, y: p.y + 15, w: 15, h: 40 };
     
     for (const obs of obstaclesRef.current) {
-      // Simple box collision
       if (hitbox.x < obs.x + obs.width && hitbox.x + hitbox.w > obs.x &&
           hitbox.y < obs.y + obs.height && hitbox.y + hitbox.h > obs.y) {
-        playCrashSound(); // Sound Effect
+        playCrashSound();
         onGameOver(scoreRef.current);
         return;
       }
@@ -441,7 +566,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onGameOver, onScoreU
            hitbox.y < coin.y + coin.height && hitbox.y + hitbox.h > coin.y) {
          coin.active = false;
          scoreRef.current.coins += 1;
-         playCoinSound(); // Sound Effect
+         playCoinSound();
          spawnParticles(coin.x + 20, coin.y + 20, '#FFD700', 10);
        }
     });
@@ -449,75 +574,8 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onGameOver, onScoreU
     // Logic: Particles
     particlesRef.current.forEach(pt => { pt.x += pt.vx; pt.y += pt.vy; pt.life -= 0.04; });
     particlesRef.current = particlesRef.current.filter(pt => pt.life > 0);
-
-    // --- DRAWING ---
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    drawBackground(ctx, canvas.width, canvas.height, activeZoneIndexRef.current, scroll);
-
-    // Draw Chaser (Modi) behind player
-    drawChaser(ctx, p.x - 80, p.groundY - PLAYER_HEIGHT, p.runCycle);
-
-    drawCharacter(ctx, p.x, p.y, p.isJumping, p.runCycle);
-
-    // Draw Obstacles (Cartoon Style)
-    obstaclesRef.current.forEach(obs => {
-      if (obs.type === ObstacleType.FLYING_DRONE) {
-        // Drone: Round, menacing
-        ctx.fillStyle = '#444';
-        ctx.beginPath(); ctx.arc(obs.x + 25, obs.y + 25, 20, 0, Math.PI*2); ctx.fill();
-        // Red Eye
-        ctx.fillStyle = '#FF0000';
-        ctx.shadowColor = '#FF0000'; ctx.shadowBlur = 10;
-        ctx.beginPath(); ctx.arc(obs.x + 25, obs.y + 25, 8, 0, Math.PI*2); ctx.fill();
-        ctx.shadowBlur = 0;
-        // Propeller on top
-        ctx.fillStyle = '#CCC';
-        ctx.fillRect(obs.x + 5, obs.y, 40, 4);
-      } else {
-        // Ground Bot: Spiky & Angry
-        ctx.fillStyle = '#2c3e50';
-        drawRoundedRect(ctx, obs.x, obs.y, 50, 50, 8);
-        // Angry Eyes
-        ctx.fillStyle = '#e74c3c';
-        ctx.beginPath(); ctx.moveTo(obs.x + 10, obs.y + 15); ctx.lineTo(obs.x+25, obs.y+25); ctx.lineTo(obs.x+10, obs.y+25); ctx.fill();
-        ctx.beginPath(); ctx.moveTo(obs.x + 40, obs.y + 15); ctx.lineTo(obs.x+25, obs.y+25); ctx.lineTo(obs.x+40, obs.y+25); ctx.fill();
-        // Teeth
-        ctx.fillStyle = '#ecf0f1';
-        ctx.fillRect(obs.x+15, obs.y+35, 20, 5);
-      }
-    });
-
-    // Draw Coins (Big & Cartoonish)
-    coinsRef.current.forEach(coin => {
-      if (!coin.active) return;
-      const bounce = Math.sin(frameCountRef.current * 0.15) * 8;
-      
-      ctx.fillStyle = '#FFD700'; // Gold
-      ctx.strokeStyle = '#D4AF37';
-      ctx.lineWidth = 4;
-      
-      ctx.beginPath(); 
-      ctx.arc(coin.x + 20, coin.y + 20 + bounce, 18, 0, Math.PI*2); 
-      ctx.fill(); 
-      ctx.stroke();
-
-      ctx.fillStyle = '#B45309'; 
-      ctx.font = 'bold 24px Arial'; 
-      ctx.fillText('৳', coin.x + 12, coin.y + 28 + bounce);
-      
-      // Shine
-      ctx.fillStyle = 'rgba(255,255,255,0.6)';
-      ctx.beginPath(); ctx.arc(coin.x + 15, coin.y + 15 + bounce, 5, 0, Math.PI*2); ctx.fill();
-    });
-
-    // Particles
-    particlesRef.current.forEach(pt => {
-      ctx.fillStyle = pt.color;
-      ctx.globalAlpha = pt.life;
-      ctx.beginPath(); ctx.arc(pt.x, pt.y, 4, 0, Math.PI*2); ctx.fill();
-    });
-    ctx.globalAlpha = 1.0;
+    heartParticlesRef.current.forEach(pt => { pt.x += pt.vx; pt.y += pt.vy; pt.life -= 0.02; });
+    heartParticlesRef.current = heartParticlesRef.current.filter(pt => pt.life > 0);
 
     if (frameCountRef.current % 10 === 0) onScoreUpdate(scoreRef.current);
     requestRef.current = requestAnimationFrame(update);
@@ -525,11 +583,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onGameOver, onScoreU
 
   // Loop Control
   useEffect(() => {
-    if (gameState === GameState.PLAYING) {
-      requestRef.current = requestAnimationFrame(update);
-    } else {
-      if (requestRef.current) cancelAnimationFrame(requestRef.current);
-    }
+    requestRef.current = requestAnimationFrame(update);
     return () => { if (requestRef.current) cancelAnimationFrame(requestRef.current); };
   }, [gameState, update]);
 
