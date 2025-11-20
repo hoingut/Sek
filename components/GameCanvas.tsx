@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import { GameState, GameObject, ObstacleType, Particle } from '../types';
-import { GAME_SPEED_START, GRAVITY, JUMP_FORCE, GROUND_HEIGHT, SPAWN_RATE_MAX, PLAYER_WIDTH, PLAYER_HEIGHT, ZONES } from '../constants';
+import { GAME_SPEED_START, GRAVITY, JUMP_FORCE, GROUND_HEIGHT, SPAWN_RATE_MAX, PLAYER_HEIGHT, ZONES } from '../constants';
 
 interface GameCanvasProps {
   gameState: GameState;
@@ -177,7 +177,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ gameState, onGameOver, onScoreU
     ctx.moveTo(0, height);
     for (let x = -600; x < width + 600; x += 100) {
         const drawX = x - bgOffset;
-        let h = 100 + Math.random() * 50; // Static random not good in loop, assume fixed shape
         // Simple skyline
         if (zoneIdx === 0) { // Dhaka City
              ctx.fillRect(drawX, height - GROUND_HEIGHT - 150, 60, 150);

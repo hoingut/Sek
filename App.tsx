@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import GameCanvas from './components/GameCanvas';
 import UIOverlay from './components/UIOverlay';
 import { GameState, GameScore } from './types';
@@ -25,7 +25,7 @@ function App() {
   }, []);
 
   const handleScoreUpdate = useCallback((newScore: GameScore) => {
-    setScore(prev => ({ ...newScore }));
+    setScore({ ...newScore });
   }, []);
 
   const handleZoneChange = useCallback((zoneName: string) => {
